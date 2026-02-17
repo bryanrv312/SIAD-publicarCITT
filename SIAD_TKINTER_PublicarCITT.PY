@@ -10,6 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
+#import getpass
 
 # Crear ventana principal
 ventana = tk.Tk()
@@ -42,7 +43,32 @@ def transformar_citt(citt_original):
         raise ValueError(f"CITT transformado no tiene 12 caracteres: {citt_transformado}")
     return citt_transformado
 
-def publicar_citt():
+
+# --- NUEVO: Ventana emergente para credenciales ---
+def pedir_credenciales():
+    # Crear ventana secundaria
+    login_win = tk.Toplevel(ventana)
+    login_win.title("Credenciales de acceso")
+    login_win.geometry("300x150")
+
+    tk.Label(login_win, text="Usuario:").pack(pady=5)
+    entry_usuario = tk.Entry(login_win, width=25)
+    entry_usuario.pack(pady=5)
+
+    tk.Label(login_win, text="Contraseña:").pack(pady=5)
+    entry_password = tk.Entry(login_win, width=25, show="*")
+    entry_password.pack(pady=5)
+
+    def confirmar():
+        usuario = entry_usuario.get()
+        password = entry_password.get()
+        login_win.destroy()  # cerrar ventana emergente
+        publicar_citt(usuario, password)  # ejecutar el resto con credenciales
+
+    tk.Button(login_win, text="Aceptar", command=confirmar).pack(pady=10)
+
+
+def publicar_citt(usuario, password):
     if not archivo_excel:
         log("⚠️ No se ha seleccionado ningún archivo.")
         return
@@ -58,8 +84,17 @@ def publicar_citt():
     driver.get("https://ww10.essalud.gob.pe/sgfa/index.php")
 
     # Login
-    driver.find_element(By.XPATH, '//*[@id="user"]').send_keys("MY-USER")
-    driver.find_element(By.XPATH, '//*[@id="pass"]').send_keys("MY-PASS")
+    # driver.find_element(By.XPATH, '//*[@id="user"]').send_keys("MY-USER")
+    # driver.find_element(By.XPATH, '//*[@id="pass"]').send_keys("MY-PASS")
+    # driver.find_element(By.XPATH, '//*[@id="aceptoIngresar"]').click()
+    # WebDriverWait(driver, 10).until(EC.number_of_windows_to_be(2))
+    # driver.switch_to.window(driver.window_handles[-1])
+
+    # usuario = entry_usuario.get()
+    # password = entry_password.get()
+    # Login 
+    driver.find_element(By.XPATH, '//*[@id="user"]').send_keys(usuario) 
+    driver.find_element(By.XPATH, '//*[@id="pass"]').send_keys(password)
     driver.find_element(By.XPATH, '//*[@id="aceptoIngresar"]').click()
     WebDriverWait(driver, 10).until(EC.number_of_windows_to_be(2))
     driver.switch_to.window(driver.window_handles[-1])
@@ -135,6 +170,8 @@ def publicar_citt():
                 sumilla_input.send_keys(f"[{citt_transformado}]")
                 log(f"🧪 CITT publicado como: [{citt_transformado}]")
 
+                input("⏸️ Pausa: Presiona Enter para continuar...")
+
                 driver.find_element(By.XPATH, '//*[@id="Guardar"]').click()
                 WebDriverWait(driver, 5).until(EC.alert_is_present())
                 driver.switch_to.alert.accept()
@@ -179,7 +216,22 @@ def publicar_citt():
 btn_seleccionar = tk.Button(ventana, text="📤 Seleccionar Excel", command=seleccionar_archivo)
 btn_seleccionar.pack(pady=5)
 
-btn_publicar = tk.Button(ventana, text="🚀 Publicar CITT", command=publicar_citt)
+# btn_publicar = tk.Button(ventana, text="🚀 Publicar CITT", command=publicar_citt)
+btn_publicar = tk.Button(ventana, text="🚀 Publicar CITT", command=pedir_credenciales)
 btn_publicar.pack(pady=5)
+
+# --- NUEVO: Campos de usuario y contraseña ---
+# frame_login = tk.Frame(ventana)
+# frame_login.pack(pady=5)
+
+# lbl_usuario = tk.Label(frame_login, text="Usuario:")
+# lbl_usuario.grid(row=0, column=0, padx=5, pady=5)
+# entry_usuario = tk.Entry(frame_login, width=30)
+# entry_usuario.grid(row=0, column=1, padx=5, pady=5)
+
+# lbl_password = tk.Label(frame_login, text="Contraseña:")
+# lbl_password.grid(row=1, column=0, padx=5, pady=5)
+# entry_password = tk.Entry(frame_login, width=30, show="*")
+# entry_password.grid(row=1, column=1, padx=5, pady=5)
 
 ventana.mainloop()
